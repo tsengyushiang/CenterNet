@@ -10,17 +10,22 @@ public class StartPython : MonoBehaviour
     private string AnacondaEnv = "CenterNet";
     private string workingDirectory = "C:/Users/m10815098/Desktop/CenterNet/python/src";
     private string pythonExeCommand = "python demo.py multi_pose --demo webcam --load_model ../models/multi_pose_dla_3x.pth";
-
+    private Process process;
     public void Start()
     {
         startPythonProcess();
+    }
+
+    void process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+    {
+        UnityEngine.Debug.Log(e.Data);
     }
 
     //主要分為ProcessStartInfo設定檔的設定與Process的啟動兩個部分。
     public void startPythonProcess()
     {
         // Set working directory and create process
-        var process = new Process
+        process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -53,5 +58,14 @@ public class StartPython : MonoBehaviour
             var line = process.StandardOutput.ReadLine();
             UnityEngine.Debug.Log(line);
         }
+    }
+
+    public void OnDestroy()
+    {
+        stopPythonProcess();
+    }
+    public void stopPythonProcess()
+    {
+        process.Kill();
     }
 }

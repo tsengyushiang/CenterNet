@@ -647,7 +647,7 @@ PlayerSettings:
   cloudServicesEnabled:
     UNet: 1
   facebookSdkVersion: 7.9.4
-  apiCompatibilityLevel: 2
+  apiCompatibilityLevel: 3
   cloudProjectId: e648b8b9-c18c-4c1c-ba49-3f584f978106
   projectName: unity
   organizationId: tsengyushiang
