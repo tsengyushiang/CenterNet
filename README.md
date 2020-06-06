@@ -79,3 +79,7 @@
         - solve :
 
             manual download `http://dl.yf.io/dla/models\imagenet\dla34-ba72cf86.pth` and move to `C:\Users\user/.cache\torch\checkpoints\dla34-ba72cf86.pth`
+
+# Setting
+
+- Edit – Project Settings – Player 中，将Scripting Runtime Version修改为Experimental (.Net 4.6 Equivalent)
