@@ -9,6 +9,7 @@ using UnityEngine;
 
 public class SocketClient : MonoBehaviour
 {
+    private Socket client;
 
     // Use this for initialization
     void Start()
@@ -17,7 +18,7 @@ public class SocketClient : MonoBehaviour
         var port = 8000;
 
         // 构建一个Socket实例，并连接指定的服务端。这里需要使用IPEndPoint类(ip和端口号的封装)
-        Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         try
         {
@@ -28,28 +29,48 @@ public class SocketClient : MonoBehaviour
             Debug.Log(e.Message);
             return;
         }
-
-        /*
-        // 接受欢迎信息
-        var bytes = new byte[1024];
-        var count = client.Receive(bytes);
-        Console.WriteLine("New message from server: {0}", Encoding.UTF32.GetString(bytes, 0, count));
-
-        // 不断的获取输入，发送给服务端
-        var input = "";
-        while (input != "exit")
-        {
-            input = Console.ReadLine();
-            client.Send(Encoding.UTF32.GetBytes(input));
-        }
-
-        client.Close();
-		*/
     }
 
+    public void sendWebCamTexture(WebCamTexture backCam)
+    {
+        Texture2D t = new Texture2D(backCam.width, backCam.height);
+        t.SetPixels(backCam.GetPixels());
+        t.Apply();
+
+        byte[] frame = ImageConversion.EncodeToJPG(t);
+
+        int length = frame.Length;
+        byte[] payload = BitConverter.GetBytes(length);
+
+        byte tmp = payload[0];
+        payload[0] = payload[3];
+        payload[3] = tmp;
+        tmp = payload[1];
+        payload[1] = payload[2];
+        payload[2] = tmp;
+
+        var z = new byte[payload.Length + frame.Length];
+        payload.CopyTo(z, 0);
+        frame.CopyTo(z, payload.Length);
+
+        /*
+        UnityEngine.Debug.Log(z[0].ToString() + " " +
+         z[1].ToString() + " " +
+         z[2].ToString() + " " +
+         z[3].ToString() + "," + length);
+		*/
+
+        client.Send(z);
+
+    }
     // Update is called once per frame
     void Update()
     {
-
+        if (client.Connected)
+        {
+            var bytes = new byte[1024];
+            var count = client.Receive(bytes);
+            UnityEngine.Debug.Log(Encoding.UTF8.GetString(bytes, 0, count));
+        }
     }
 }

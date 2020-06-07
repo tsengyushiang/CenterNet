@@ -223,7 +223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_AspectMode: 0
-  m_AspectRatio: 2.7726097
+  m_AspectRatio: 3.1210527
 --- !u!114 &133084580
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -509,6 +509,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   background: {fileID: 133084580}
   fit: {fileID: 133084579}
+  CSharpSocketClient: {fileID: 1436792675}
 --- !u!1 &612935619
 GameObject:
   m_ObjectHideFlags: 0
