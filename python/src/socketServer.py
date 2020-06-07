@@ -18,21 +18,28 @@ import numpy as np
 import struct  # new
 import zlib
 import threading
+import json
 
 imageQueue = []
 
 
-def processImage(conn):
+def processImage(conn, opt):
     while True:
         if(len(imageQueue) > 0):
 
             # use CenterNet models
             ret = detector.run(imageQueue[0])
-            time_str = ''
-            for stat in time_stats:
-                time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
-            print(time_str)
-            conn.send(time_str.encode('utf-8'))
+            data = {
+                'result': []
+            }
+            for bbox in ret['results'][1]:
+                if bbox[4] > opt.vis_thresh:
+                    data['result'].append({
+                        'bbox': bbox[:4],
+                        'hp': bbox[5:39]
+                    })
+
+            conn.send(json.dumps(data).encode('utf-8'))
             imageQueue.pop(0)
 
         if cv2.waitKey(1) == 27:
@@ -70,7 +77,7 @@ if __name__ == '__main__':
     print("payload_size: {}".format(payload_size))
 
     # 建立一個子執行緒
-    t = threading.Thread(target=processImage, args=(conn,))
+    t = threading.Thread(target=processImage, args=(conn, opt))
 
     # 執行該子執行緒
     t.start()
@@ -79,14 +86,14 @@ if __name__ == '__main__':
 
         # Recieve images data from unity
         while len(data) < payload_size:
-            #print("Recv: {}".format(len(data)))
+            # print("Recv: {}".format(len(data)))
             data += conn.recv(4096)
 
-        #print("Done Recv: {}".format(len(data)))
+        # print("Done Recv: {}".format(len(data)))
         packed_msg_size = data[:payload_size]
         data = data[payload_size:]
         msg_size = struct.unpack(">L", packed_msg_size)[0]
-        #print("{},msg_size: {}".format(packed_msg_size, msg_size))
+        # print("{},msg_size: {}".format(packed_msg_size, msg_size))
         while len(data) < msg_size:
             data += conn.recv(4096)
         frame_data = data[:msg_size]
