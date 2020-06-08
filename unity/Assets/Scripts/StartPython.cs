@@ -59,13 +59,4 @@ public class StartPython : MonoBehaviour
             UnityEngine.Debug.Log(line);
         }
     }
-
-    public void OnDestroy()
-    {
-        stopPythonProcess();
-    }
-    public void stopPythonProcess()
-    {
-        process.Kill();
-    }
 }

@@ -26,9 +26,9 @@ imageQueue = []
 def processImage(conn, opt):
     while True:
         if(len(imageQueue) > 0):
-
             # use CenterNet models
             ret = detector.run(imageQueue[0])
+            
             data = {
                 'result': []
             }
@@ -41,7 +41,7 @@ def processImage(conn, opt):
 
             conn.send(json.dumps(data).encode('utf-8'))
             imageQueue.pop(0)
-
+            
         if cv2.waitKey(1) == 27:
             break  # esc to quit
 
@@ -101,6 +101,7 @@ if __name__ == '__main__':
 
         nparr = np.fromstring(frame_data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
         imageQueue.append(img)
         if(len(imageQueue) > 2):
             imageQueue.pop(0)

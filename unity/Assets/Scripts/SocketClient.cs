@@ -25,7 +25,8 @@ public class SocketClient : MonoBehaviour
 {
     private Socket client;
     private Texture2D latestSendTexture;
-    public RawImage background;
+    public LineRenderer lineRenderer;
+    public RawImage centerProcessOutput;
 
     // Use this for initialization
     void Start()
@@ -46,10 +47,10 @@ public class SocketClient : MonoBehaviour
             return;
         }
         latestSendTexture = new Texture2D(100, 100);
-        background.texture = latestSendTexture;
+        centerProcessOutput.texture = latestSendTexture;
     }
 
-    void Draw(Texture2D MyTexture, float x1, float y1, float x2, float y2)
+    void Draw(Texture2D MyTexture, float x1, float y1, float x2, float y2, Color c)
     {
         float x, y;
         float dy = y2 - y1;
@@ -69,7 +70,7 @@ public class SocketClient : MonoBehaviour
             for (y = y2; y < y1; y += dy_inc)
             {
                 x = x1 + (y - y1) * m;
-                MyTexture.SetPixel((int)(x), (int)(y), Color.black);
+                MyTexture.SetPixel((int)(x), (int)(y), c);
             }
         }
         else
@@ -77,7 +78,7 @@ public class SocketClient : MonoBehaviour
             for (x = x1; x < x2; x += dx_inc)
             {
                 y = y1 + (x - x1) * m;
-                MyTexture.SetPixel((int)(x), (int)(y), Color.black);
+                MyTexture.SetPixel((int)(x), (int)(y), c);
             }
         }
         MyTexture.Apply();
@@ -122,12 +123,59 @@ public class SocketClient : MonoBehaviour
         {
             var bytes = new byte[4096];
             var count = client.Receive(bytes);
-            UnityEngine.Debug.Log(Encoding.UTF8.GetString(bytes, 0, count));
 
+            //UnityEngine.Debug.Log(Encoding.UTF8.GetString(bytes, 0, count));
 
-            Draw(latestSendTexture, 0, 0, 500, 500);
-            background.texture = latestSendTexture;
-            CenterNetArray result = JsonUtility.FromJson<CenterNetArray>(Encoding.UTF8.GetString(bytes, 0, count));
+            CenterNetArray centerNet = JsonUtility.FromJson<CenterNetArray>(Encoding.UTF8.GetString(bytes, 0, count));
+
+            if (centerNet.result.Length > 0)
+            {
+                List<Vector3> bbox = new List<Vector3>();
+                List<Vector3> keyPoint = new List<Vector3>();
+                for (int i = 0; i < centerNet.result.Length; i++)
+                {
+                    float xScale = centerProcessOutput.rectTransform.rect.width / latestSendTexture.width;
+                    float yScale = centerProcessOutput.rectTransform.rect.height / latestSendTexture.height;
+
+                    //preprocess coordinates
+                    for (int j = 0; j < centerNet.result[i].bbox.Length; j++)
+                    {
+                        if (j % 2 == 1)
+                        {
+                            centerNet.result[i].bbox[j] = latestSendTexture.height - centerNet.result[i].bbox[j];
+                            centerNet.result[i].bbox[j] *= yScale;
+                        }
+                        else
+                        {
+                            centerNet.result[i].bbox[j] *= xScale;
+
+                        }
+                    }
+
+                    // draw bounding box result
+                    Vector3 topLeft = new Vector3(centerNet.result[i].bbox[0], centerNet.result[i].bbox[1], 0);
+                    Vector3 topRight = new Vector3(centerNet.result[i].bbox[2], centerNet.result[i].bbox[1], 0);
+                    Vector3 bottomLeft = new Vector3(centerNet.result[i].bbox[0], centerNet.result[i].bbox[3], 0);
+                    Vector3 bottomRight = new Vector3(centerNet.result[i].bbox[2], centerNet.result[i].bbox[3], 0);
+
+                    bbox.Add(topLeft);
+                    bbox.Add(topRight);
+                    bbox.Add(topRight);
+                    bbox.Add(bottomRight);
+                    bbox.Add(bottomRight);
+                    bbox.Add(bottomLeft);
+                    bbox.Add(bottomLeft);
+                    bbox.Add(topLeft);
+
+                    //draw 
+
+                }
+
+                lineRenderer.positionCount = bbox.Count;
+                lineRenderer.SetPositions(bbox.ToArray());
+
+                centerProcessOutput.texture = latestSendTexture;
+            }
         }
     }
 }
