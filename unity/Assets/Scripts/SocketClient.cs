@@ -25,12 +25,16 @@ public class SocketClient : MonoBehaviour
 {
     private Socket client;
     private Texture2D latestSendTexture;
-    public LineRenderer lineRenderer;
     public RawImage centerProcessOutput;
+
+    public List<GameObject> lineSegements;
+
 
     // Use this for initialization
     void Start()
     {
+        lineSegements = new List<GameObject>();
+
         var host = "127.0.0.1";
         var port = 8000;
 
@@ -50,38 +54,27 @@ public class SocketClient : MonoBehaviour
         centerProcessOutput.texture = latestSendTexture;
     }
 
-    void Draw(Texture2D MyTexture, float x1, float y1, float x2, float y2, Color c)
+    private void destoryLines()
     {
-        float x, y;
-        float dy = y2 - y1;
-        float dx = x2 - x1;
-        float m = dy / dx;
-        float dy_inc = -1;
-
-        if (dy < 0)
-            dy = 1;
-
-        float dx_inc = 1;
-        if (dx < 0)
-            dx = -1;
-
-        if (Mathf.Abs(dy) > Mathf.Abs(dx))
+        for (int i = 0; i < lineSegements.Count; i++)
         {
-            for (y = y2; y < y1; y += dy_inc)
-            {
-                x = x1 + (y - y1) * m;
-                MyTexture.SetPixel((int)(x), (int)(y), c);
-            }
+            Destroy(lineSegements[i]);
         }
-        else
-        {
-            for (x = x1; x < x2; x += dx_inc)
-            {
-                y = y1 + (x - x1) * m;
-                MyTexture.SetPixel((int)(x), (int)(y), c);
-            }
-        }
-        MyTexture.Apply();
+        lineSegements.Clear();
+    }
+
+    private void addLines(List<Vector3> vertices)
+    {
+        RawImage clonePannel = Instantiate(centerProcessOutput);
+        clonePannel.GetComponent<RawImage>().color = new Color(0, 0, 0, 0);
+        clonePannel.transform.SetParent(centerProcessOutput.transform.parent, false);
+
+        LineRenderer lineRenderer = clonePannel.GetComponent<LineRenderer>();
+
+        lineRenderer.positionCount = vertices.Count;
+        lineRenderer.SetPositions(vertices.ToArray());
+
+        lineSegements.Add(clonePannel.gameObject);
     }
 
     public void sendWebCamTexture(WebCamTexture backCam)
@@ -130,8 +123,8 @@ public class SocketClient : MonoBehaviour
 
             if (centerNet.result.Length > 0)
             {
-                List<Vector3> bbox = new List<Vector3>();
                 List<Vector3> keyPoint = new List<Vector3>();
+                destoryLines();
                 for (int i = 0; i < centerNet.result.Length; i++)
                 {
                     float xScale = centerProcessOutput.rectTransform.rect.width / latestSendTexture.width;
@@ -158,6 +151,7 @@ public class SocketClient : MonoBehaviour
                     Vector3 bottomLeft = new Vector3(centerNet.result[i].bbox[0], centerNet.result[i].bbox[3], 0);
                     Vector3 bottomRight = new Vector3(centerNet.result[i].bbox[2], centerNet.result[i].bbox[3], 0);
 
+                    List<Vector3> bbox = new List<Vector3>();
                     bbox.Add(topLeft);
                     bbox.Add(topRight);
                     bbox.Add(topRight);
@@ -166,14 +160,9 @@ public class SocketClient : MonoBehaviour
                     bbox.Add(bottomLeft);
                     bbox.Add(bottomLeft);
                     bbox.Add(topLeft);
-
-                    //draw 
+                    addLines(bbox);
 
                 }
-
-                lineRenderer.positionCount = bbox.Count;
-                lineRenderer.SetPositions(bbox.ToArray());
-
                 centerProcessOutput.texture = latestSendTexture;
             }
         }
