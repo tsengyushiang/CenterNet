@@ -23,12 +23,37 @@ import json
 imageQueue = []
 
 
+def recvFrames(conn, data):
+    while True:
+        # Recieve images data from unity
+        while len(data) < payload_size:
+            # print("Recv: {}".format(len(data)))
+            data += conn.recv(4096)
+
+        # print("Done Recv: {}".format(len(data)))
+        packed_msg_size = data[:payload_size]
+        data = data[payload_size:]
+        msg_size = struct.unpack(">L", packed_msg_size)[0]
+        # print("{},msg_size: {}".format(packed_msg_size, msg_size))
+        while len(data) < msg_size:
+            data += conn.recv(4096)
+        frame_data = data[:msg_size]
+        data = data[msg_size:]
+
+        nparr = np.fromstring(frame_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        imageQueue.append(img)
+
+
 def processImage(conn, opt):
+    time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge']
+
     while True:
         if(len(imageQueue) > 0):
             # use CenterNet models
             ret = detector.run(imageQueue[0])
-            
+
             data = {
                 'result': []
             }
@@ -41,7 +66,12 @@ def processImage(conn, opt):
 
             conn.send(json.dumps(data).encode('utf-8'))
             imageQueue.pop(0)
-            
+
+            time_str = ''
+            for stat in time_stats:
+                time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
+            print(time_str)
+
         if cv2.waitKey(1) == 27:
             break  # esc to quit
 
@@ -54,7 +84,6 @@ if __name__ == '__main__':
     opt.debug = max(opt.debug, 1)
     Detector = detector_factory[opt.task]
     detector = Detector(opt)
-    time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge']
 
     detector.pause = False
 
@@ -77,36 +106,9 @@ if __name__ == '__main__':
     print("payload_size: {}".format(payload_size))
 
     # 建立一個子執行緒
-    t = threading.Thread(target=processImage, args=(conn, opt))
+    t = threading.Thread(target=recvFrames, args=(conn, data))
 
     # 執行該子執行緒
     t.start()
 
-    while True:
-
-        # Recieve images data from unity
-        while len(data) < payload_size:
-            # print("Recv: {}".format(len(data)))
-            data += conn.recv(4096)
-
-        # print("Done Recv: {}".format(len(data)))
-        packed_msg_size = data[:payload_size]
-        data = data[payload_size:]
-        msg_size = struct.unpack(">L", packed_msg_size)[0]
-        # print("{},msg_size: {}".format(packed_msg_size, msg_size))
-        while len(data) < msg_size:
-            data += conn.recv(4096)
-        frame_data = data[:msg_size]
-        data = data[msg_size:]
-
-        nparr = np.fromstring(frame_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        imageQueue.append(img)
-        if(len(imageQueue) > 2):
-            imageQueue.pop(0)
-
-        if cv2.waitKey(1) == 27:
-            break  # esc to quit
-
-    threading.Event().clear()
+    processImage(conn, opt)
