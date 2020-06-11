@@ -9,6 +9,7 @@ import cv2
 
 from opts import opts
 from detectors.detector_factory import detector_factory
+import threading
 
 image_ext = ['jpg', 'jpeg', 'png', 'webp']
 video_ext = ['mp4', 'mov', 'avi', 'mkv']
@@ -56,4 +57,12 @@ def demo(opt):
 
 if __name__ == '__main__':
     opt = opts().init()
+
+    '''
+    # 建立一個子執行緒
+    t = threading.Thread(target=demo, args=(opt,))
+
+    # 執行該子執行緒
+    t.start()
+    '''
     demo(opt)

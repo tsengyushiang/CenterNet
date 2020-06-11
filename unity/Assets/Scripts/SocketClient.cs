@@ -29,6 +29,11 @@ public class SocketClient : MonoBehaviour
 
     public List<GameObject> lineSegements;
 
+    private int[,] keypointEdges = new int[,] {{0, 1}, {0, 2}, {1, 3}, {2, 4},
+                    {3, 5}, {4, 6}, {5, 6},
+                    {5, 7}, {7, 9}, {6, 8}, {8, 10},
+                    {5, 11}, {6, 12}, {11, 12},
+                    {11, 13}, {13, 15}, {12, 14}, {14, 16}};
 
     // Use this for initialization
     void Start()
@@ -104,7 +109,7 @@ public class SocketClient : MonoBehaviour
          z[1].ToString() + " " +
          z[2].ToString() + " " +
          z[3].ToString() + "," + length);
-		*/
+        */
 
         client.Send(z);
 
@@ -130,7 +135,7 @@ public class SocketClient : MonoBehaviour
                     float xScale = centerProcessOutput.rectTransform.rect.width / latestSendTexture.width;
                     float yScale = centerProcessOutput.rectTransform.rect.height / latestSendTexture.height;
 
-                    //preprocess coordinates
+                    //preprocess bbox coordinates
                     for (int j = 0; j < centerNet.result[i].bbox.Length; j++)
                     {
                         if (j % 2 == 1)
@@ -143,6 +148,16 @@ public class SocketClient : MonoBehaviour
                             centerNet.result[i].bbox[j] *= xScale;
 
                         }
+                    }
+
+                    //preprocess keypoints coordinates
+                    List<Vector3> keypoints = new List<Vector3>();
+                    for (int j = 0; j < centerNet.result[i].hp.Length; j += 2)
+                    {
+                        centerNet.result[i].hp[j + 1] = latestSendTexture.height - centerNet.result[i].hp[j + 1];
+                        centerNet.result[i].hp[j + 1] *= yScale;
+                        centerNet.result[i].hp[j] *= xScale;
+                        keypoints.Add(new Vector3(centerNet.result[i].hp[j], centerNet.result[i].hp[j + 1], 0));
                     }
 
                     // draw bounding box result
@@ -161,6 +176,15 @@ public class SocketClient : MonoBehaviour
                     bbox.Add(bottomLeft);
                     bbox.Add(topLeft);
                     addLines(bbox);
+
+                    //draw keypoints edges
+                    for (int j = 0; j < keypointEdges.Length / 2; j++)
+                    {
+                        List<Vector3> line = new List<Vector3>();
+                        line.Add(keypoints[keypointEdges[j, 0]]);
+                        line.Add(keypoints[keypointEdges[j, 1]]);
+                        addLines(line);
+                    }
 
                 }
                 centerProcessOutput.texture = latestSendTexture;

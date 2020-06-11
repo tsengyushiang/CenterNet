@@ -15,9 +15,15 @@ public class ScriptsCamera : MonoBehaviour
     public AspectRatioFitter fit;
     public SocketClient CSharpSocketClient;
 
+    void Awake()
+    {
+        QualitySettings.vSyncCount = 0;
+    }
     // Use this for initialization
     private void Start()
     {
+        Application.targetFrameRate = 500;
+
         defaultBackground = background.texture;
         WebCamDevice[] devices = WebCamTexture.devices;
         if (devices.Length == 0)
