@@ -21,9 +21,7 @@ import threading
 import json
 import time
 
-
 imageQueue = []
-
 
 def recvFrames(conn, data):
     start = time.time()
@@ -53,7 +51,6 @@ def recvFrames(conn, data):
 
         if(len(imageQueue) < 2):
             imageQueue.append(img)
-
 
 def processImage(conn, opt):
     time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge']

@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 [Serializable]
 class CenterNetArray
@@ -19,6 +20,11 @@ class CenterNet
 {
     public float[] bbox;
     public float[] hp;
+}
+
+enum STATE
+{
+    IDLE, WAIT
 }
 
 public class SocketClient : MonoBehaviour
@@ -35,9 +41,18 @@ public class SocketClient : MonoBehaviour
                     {5, 11}, {6, 12}, {11, 12},
                     {11, 13}, {13, 15}, {12, 14}, {14, 16}};
     private Thread socketRecv;
+    private STATE socketState;
+
+    private DateTime startTime;
+    private List<int> elapsedTimesMs;
+
     // Use this for initialization
     void Start()
     {
+        socketState = STATE.IDLE;
+        startTime = DateTime.Now;
+        elapsedTimesMs = new List<int>();
+
         resultQueue = new List<CenterNetArray>();
         lineSegements = new List<GameObject>();
 
@@ -142,6 +157,10 @@ public class SocketClient : MonoBehaviour
             {
                 resultQueue.Add(centerNet);
             }
+            socketState = STATE.IDLE;
+            Debug.Log("recv texture CenterNet result");
+            elapsedTimesMs.Add((DateTime.Now - startTime).Milliseconds);
+            startTime = DateTime.Now;
         }
     }
 
@@ -170,10 +189,19 @@ public class SocketClient : MonoBehaviour
 
     public void sendWebCamTexture(WebCamTexture backCam)
     {
+        if (socketState == STATE.WAIT)
+            return;
+        socketState = STATE.WAIT;
+
+        Debug.Log("send texture");
         if (latestSendTexture == null)
         {
             latestSendTexture = new Texture2D(backCam.width, backCam.height);
-            centerProcessOutput.texture = latestSendTexture;
+        }
+        else
+        {
+            Destroy(centerProcessOutput.texture);
+            centerProcessOutput.texture = Instantiate(latestSendTexture);
         }
         latestSendTexture.SetPixels(backCam.GetPixels());
         latestSendTexture.Apply();
@@ -194,13 +222,6 @@ public class SocketClient : MonoBehaviour
         payload.CopyTo(z, 0);
         frame.CopyTo(z, payload.Length);
 
-        /*
-        UnityEngine.Debug.Log(z[0].ToString() + " " +
-         z[1].ToString() + " " +
-         z[2].ToString() + " " +
-         z[3].ToString() + "," + length);
-        */
-
         client.Send(z);
 
     }
@@ -214,5 +235,7 @@ public class SocketClient : MonoBehaviour
     {
         //當應用程式結束時會自動呼叫這個函數
         socketRecv.Abort();//強制中斷當前執行緒
+        Debug.LogFormat("Average fps : {0}",
+          (float)elapsedTimesMs.Count * 1000 / (float)elapsedTimesMs.Sum());
     }
 }
