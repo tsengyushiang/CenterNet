@@ -32,8 +32,8 @@ public class SocketClient : MonoBehaviour
     private Socket client;
     private Texture2D latestSendTexture;
     public RawImage centerProcessOutput;
-
-    public List<GameObject> lineSegements;
+    public Text recvFps;
+    private List<GameObject> lineSegements;
     private List<CenterNetArray> resultQueue;
     private int[,] keypointEdges = new int[,] {{0, 1}, {0, 2}, {1, 3}, {2, 4},
                     {3, 5}, {4, 6}, {5, 6},
@@ -130,7 +130,7 @@ public class SocketClient : MonoBehaviour
             bbox.Add(bottomLeft);
             bbox.Add(bottomLeft);
             bbox.Add(topLeft);
-            addLines(bbox);
+            addLines(bbox, Color.green);
 
             //draw keypoints edges
             for (int j = 0; j < keypointEdges.Length / 2; j++)
@@ -138,10 +138,21 @@ public class SocketClient : MonoBehaviour
                 List<Vector3> line = new List<Vector3>();
                 line.Add(keypoints[keypointEdges[j, 0]]);
                 line.Add(keypoints[keypointEdges[j, 1]]);
-                addLines(line);
+
+                //左右邊身體分別為奇數/偶數,上軀幹連結(5,6),下軀幹連接(11,12)
+                if ((keypointEdges[j, 0] % 2 == 0) && (keypointEdges[j, 1] % 2 == 0))
+                    addLines(line, Color.red);
+                else if ((keypointEdges[j, 0] % 2 == 1) && (keypointEdges[j, 1] % 2 == 1))
+                    addLines(line, Color.blue);
+                else
+                    addLines(line, Color.magenta);
+
+
             }
 
         }
+        recvFps.text = string.Format("FPS : {0}", 1000.0f / (float)elapsedTimesMs.Last());
+
         resultQueue.RemoveAt(0);
     }
     private void readCenterNetResult()
@@ -158,8 +169,9 @@ public class SocketClient : MonoBehaviour
                 resultQueue.Add(centerNet);
             }
             socketState = STATE.IDLE;
-            Debug.Log("recv texture CenterNet result");
-            elapsedTimesMs.Add((DateTime.Now - startTime).Milliseconds);
+            //Debug.Log("recv texture CenterNet result");
+            int processTime = (DateTime.Now - startTime).Milliseconds;
+            elapsedTimesMs.Add(processTime);
             startTime = DateTime.Now;
         }
     }
@@ -173,7 +185,7 @@ public class SocketClient : MonoBehaviour
         lineSegements.Clear();
     }
 
-    private void addLines(List<Vector3> vertices)
+    private void addLines(List<Vector3> vertices, Color c)
     {
         RawImage clonePannel = Instantiate(centerProcessOutput);
         clonePannel.GetComponent<RawImage>().color = new Color(0, 0, 0, 0);
@@ -184,6 +196,9 @@ public class SocketClient : MonoBehaviour
         lineRenderer.positionCount = vertices.Count;
         lineRenderer.SetPositions(vertices.ToArray());
 
+        lineRenderer.startColor = c;
+        lineRenderer.endColor = c;
+
         lineSegements.Add(clonePannel.gameObject);
     }
 
@@ -193,7 +208,7 @@ public class SocketClient : MonoBehaviour
             return;
         socketState = STATE.WAIT;
 
-        Debug.Log("send texture");
+        //Debug.Log("send texture");
         if (latestSendTexture == null)
         {
             latestSendTexture = new Texture2D(backCam.width, backCam.height);
