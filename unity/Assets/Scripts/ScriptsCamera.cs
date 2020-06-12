@@ -38,7 +38,7 @@ public class ScriptsCamera : MonoBehaviour
             //if (!devices [i].isFrontFacing) {    //開啟後鏡頭
             if (devices[i].isFrontFacing)
             {    //開啟前鏡頭
-                backCam = new WebCamTexture(devices[i].name, Screen.width, Screen.height);
+                backCam = new WebCamTexture(devices[i].name, 128,128);
 
             }
         }
