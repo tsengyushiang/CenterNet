@@ -19,11 +19,15 @@ import struct  # new
 import zlib
 import threading
 import json
+import time
+
 
 imageQueue = []
 
 
 def recvFrames(conn, data):
+    start = time.time()
+
     while True:
         # Recieve images data from unity
         while len(data) < payload_size:
@@ -40,10 +44,15 @@ def recvFrames(conn, data):
         frame_data = data[:msg_size]
         data = data[msg_size:]
 
+        end = time.time()
+        print('recieve frame time : {:.2f}'.format(end - start))
+        start = end
+
         nparr = np.fromstring(frame_data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        imageQueue.append(img)
+        if(len(imageQueue) < 2):
+            imageQueue.append(img)
 
 
 def processImage(conn, opt):
