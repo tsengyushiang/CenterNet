@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Threading;
 
 [Serializable]
 class CenterNetArray
@@ -60,8 +59,6 @@ public class SocketClient : MonoBehaviour
             Debug.Log(e.Message);
             return;
         }
-        latestSendTexture = new Texture2D(100, 100);
-        centerProcessOutput.texture = latestSendTexture;
     }
 
     private void renderCenterResult()
@@ -130,7 +127,6 @@ public class SocketClient : MonoBehaviour
             }
 
         }
-        centerProcessOutput.texture = latestSendTexture;
         resultQueue.RemoveAt(0);
     }
     private void readCenterNetResult()
@@ -140,7 +136,7 @@ public class SocketClient : MonoBehaviour
             var bytes = new byte[4096];
             var count = client.Receive(bytes);
 
-            UnityEngine.Debug.Log("Socket Recv : " + Encoding.UTF8.GetString(bytes, 0, count));
+            //UnityEngine.Debug.Log("Socket Recv : " + Encoding.UTF8.GetString(bytes, 0, count));
             CenterNetArray centerNet = JsonUtility.FromJson<CenterNetArray>(Encoding.UTF8.GetString(bytes, 0, count));
             if (centerNet.result.Length > 0)
             {
@@ -174,7 +170,11 @@ public class SocketClient : MonoBehaviour
 
     public void sendWebCamTexture(WebCamTexture backCam)
     {
-        latestSendTexture = new Texture2D(backCam.width, backCam.height);
+        if (latestSendTexture == null)
+        {
+            latestSendTexture = new Texture2D(backCam.width, backCam.height);
+            centerProcessOutput.texture = latestSendTexture;
+        }
         latestSendTexture.SetPixels(backCam.GetPixels());
         latestSendTexture.Apply();
 

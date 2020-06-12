@@ -60,16 +60,5 @@ public class ScriptsCamera : MonoBehaviour
             return;
 
         CSharpSocketClient.sendWebCamTexture(backCam);
-
-        float ratio = (float)backCam.width / (float)backCam.height;
-        fit.aspectRatio = ratio;
-
-        float scaleY = backCam.videoVerticallyMirrored ? -1f : 1f;
-        //background.rectTransform.localScale = new Vector3 (1f, scaleY, 1f);    //非鏡像
-        background.rectTransform.localScale = new Vector3(-1f, scaleY, 1f);    //鏡像
-
-        int orient = -backCam.videoRotationAngle;
-        background.rectTransform.localEulerAngles = new Vector3(0, 0, orient);
-
     }
 }
